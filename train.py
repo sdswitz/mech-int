@@ -21,6 +21,22 @@ if os.path.exists(ACTIVATIONS_PATH):
     print(f"Loading cached activations from {ACTIVATIONS_PATH}")
     all_activations = torch.load(ACTIVATIONS_PATH)
 else:
+    # Find the latest checkpoint to resume from
+    start_text = 0
+    all_activations = []
+    for ckpt in sorted(
+        [f for f in os.listdir(".") if f.startswith("activations_checkpoint_") and f.endswith(".pt")],
+        key=lambda f: int(f.split("_")[-1].split(".")[0])
+    ):
+        n = int(ckpt.split("_")[-1].split(".")[0])
+        if n <= NUM_TEXTS:
+            start_text = n
+            latest_checkpoint = ckpt
+
+    if start_text > 0:
+        print(f"Resuming from checkpoint {latest_checkpoint} ({start_text}/{NUM_TEXTS} texts)")
+        all_activations = [torch.load(latest_checkpoint)]
+
     # Load a model (eg GPT-2 Small)
     model = transformer_lens.HookedTransformer.from_pretrained("pythia-70m")
 
@@ -28,11 +44,12 @@ else:
     dataset = load_dataset("openwebtext", split="train", streaming=True)
 
     # Collect activations
-    all_activations = []
     with torch.no_grad():
         for i, example in enumerate(dataset):
             if i >= NUM_TEXTS:
                 break
+            if i < start_text:
+                continue
             text = example["text"][:512]  # truncate long texts to avoid OOM
             _, cache = model.run_with_cache(text, names_filter='blocks.3.hook_resid_post')
             acts = cache['blocks.3.hook_resid_post'][0].cpu()  # (seq_len, 512)
@@ -43,6 +60,10 @@ else:
                 checkpoint_path = f"activations_checkpoint_{i + 1}.pt"
                 torch.save(checkpoint, checkpoint_path)
                 print(f"Saved checkpoint to {checkpoint_path} ({i + 1}/{NUM_TEXTS} texts)")
+                # Delete previous checkpoint
+                prev_path = f"activations_checkpoint_{i + 1 - 5000}.pt"
+                if os.path.exists(prev_path):
+                    os.remove(prev_path)
 
     all_activations = torch.cat(all_activations, dim=0)
     torch.save(all_activations, ACTIVATIONS_PATH)
