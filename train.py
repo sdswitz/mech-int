@@ -15,7 +15,7 @@ MODEL_PATH = "sae_model.pt"
 #     exit(0)
 
 NUM_TEXTS = 50000
-ACTIVATIONS_PATH = f"activations_{NUM_TEXTS}.pt"
+ACTIVATIONS_PATH = f"activations/activations_{NUM_TEXTS}.pt"
 
 if os.path.exists(ACTIVATIONS_PATH):
     print(f"Loading cached activations from {ACTIVATIONS_PATH}")
