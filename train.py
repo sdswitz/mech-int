@@ -38,8 +38,11 @@ else:
             acts = cache['blocks.3.hook_resid_post'][0].cpu()  # (seq_len, 512)
             all_activations.append(acts)
             del cache
-            if i % 500 == 0:
-                print(f"Collected activations from {i}/{NUM_TEXTS} texts")
+            if (i + 1) % 5000 == 0:
+                checkpoint = torch.cat(all_activations, dim=0)
+                checkpoint_path = f"activations_checkpoint_{i + 1}.pt"
+                torch.save(checkpoint, checkpoint_path)
+                print(f"Saved checkpoint to {checkpoint_path} ({i + 1}/{NUM_TEXTS} texts)")
 
     all_activations = torch.cat(all_activations, dim=0)
     torch.save(all_activations, ACTIVATIONS_PATH)
