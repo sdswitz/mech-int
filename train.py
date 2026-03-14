@@ -86,14 +86,17 @@ SAE = SparseAutoEncoder(d=d, m=m)
 SAE = SAE.to(device)
 optimizer = torch.optim.Adam(SAE.parameters(), lr=learning_rate)
 
-wandb.init(project="sae-pythia-70m", config={
-    "d": d,
-    "m": m,
-    "learning_rate": learning_rate,
-    "batch_size": batch_size,
-    "epochs": EPOCHS,
-    "num_texts": NUM_TEXTS,
-})
+wandb.init(project="sae-pythia-70m",
+           mode = "online",
+           name = f"sae_d{d}_m{m}_lr{learning_rate}_bs{batch_size}_epochs{EPOCHS}",
+           config={
+            "d": d,
+            "m": m,
+            "learning_rate": learning_rate,
+            "batch_size": batch_size,
+            "epochs": EPOCHS,
+            "num_texts": NUM_TEXTS,
+        })
 
 feature_ever_active = torch.zeros(m, dtype=torch.bool, device=device)
 
