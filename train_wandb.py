@@ -7,6 +7,7 @@ import pandas as pd
 from sae import SparseAutoEncoder, SAEloss
 from datasets import load_dataset
 import tqdm
+import wandb
 
 MODEL_PATH = "sae_model.pt"
 # if os.path.exists(MODEL_PATH):
@@ -85,6 +86,18 @@ SAE = SparseAutoEncoder(d=d, m=m)
 SAE = SAE.to(device)
 optimizer = torch.optim.Adam(SAE.parameters(), lr=learning_rate)
 
+wandb.init(project="sae-pythia-70m",
+           mode = "online",
+           name = f"sae_d{d}_m{m}_lr{learning_rate}_bs{batch_size}_epochs{EPOCHS}",
+           config={
+            "d": d,
+            "m": m,
+            "learning_rate": learning_rate,
+            "batch_size": batch_size,
+            "epochs": EPOCHS,
+            "num_texts": NUM_TEXTS,
+        })
+
 feature_ever_active = torch.zeros(m, dtype=torch.bool, device=device)
 
 for i in range(EPOCHS):
@@ -99,6 +112,14 @@ for i in range(EPOCHS):
     feature_ever_active |= (f > 0).any(dim=0)
     dead_features = (~feature_ever_active).sum().item()
 
+    wandb.log({
+        "mse": mse.item(),
+        "l1": l1.item(),
+        "l0": l0.item(),
+        "loss": loss.item(),
+        "dead_features": dead_features,
+    }, step=i)
+
     if i % interval == 0 or i == EPOCHS - 1:
         print(f"step {i}: loss={loss:.4f} mse={mse:.4f} l0={l0:.4f} dead={dead_features}")
     optimizer.zero_grad(set_to_none=True)
@@ -106,7 +127,10 @@ for i in range(EPOCHS):
     optimizer.step()
     with torch.no_grad():
         SAE.W_dec.data = SAE.W_dec.data / SAE.W_dec.data.norm(dim=1, keepdim=True)
+        
 
 # save the model after training
 torch.save(SAE.state_dict(), MODEL_PATH)
 print(f"Model saved to {MODEL_PATH}")
+
+wandb.finish()
