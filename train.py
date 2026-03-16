@@ -98,7 +98,7 @@ for i in range(EPOCHS):
     mse = F.mse_loss(xhat, x)
     l1 = f.abs().mean()
     l0 = (f > 0).float().mean()
-    loss = SAEloss(xhat, x, f)
+    loss = SAEloss(xhat, x, f, lam=1e-1)
 
     feature_ever_active |= (f > 0).any(dim=0)
     dead_features = (~feature_ever_active).sum().item()
