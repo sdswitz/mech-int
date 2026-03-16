@@ -15,6 +15,7 @@ MODEL_PATH = "sae_model.pt"
 
 NUM_TEXTS = 50000
 ACTIVATIONS_PATH = f"activations/activations_{NUM_TEXTS}.pt"
+os.makedirs("activations", exist_ok=True)
 
 if os.path.exists(ACTIVATIONS_PATH):
     print(f"Loading cached activations from {ACTIVATIONS_PATH}")
@@ -87,6 +88,9 @@ optimizer = torch.optim.Adam(SAE.parameters(), lr=learning_rate)
 
 feature_ever_active = torch.zeros(m, dtype=torch.bool, device=device)
 
+METRICS_PATH = "training_metrics.csv"
+metrics_rows = []
+
 for i in range(EPOCHS):
     x = all_activations[torch.randperm(all_activations.shape[0])[:batch_size]].to(device)
     xhat, f = SAE(x)
@@ -99,8 +103,19 @@ for i in range(EPOCHS):
     feature_ever_active |= (f > 0).any(dim=0)
     dead_features = (~feature_ever_active).sum().item()
 
+    metrics_rows.append({
+        "step": i,
+        "loss": loss.item(),
+        "mse": mse.item(),
+        "l1": l1.item(),
+        "l0": l0.item(),
+        "dead_features": dead_features,
+    })
+
     if i % interval == 0 or i == EPOCHS - 1:
         print(f"step {i}: loss={loss:.4f} mse={mse:.4f} l0={l0:.4f} dead={dead_features}")
+        pd.DataFrame(metrics_rows).to_csv(METRICS_PATH, index=False)
+
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
