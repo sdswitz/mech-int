@@ -1,0 +1,216 @@
+=== Rank 1: Feature 3289 (top activation: 168.386) ===
+Feature 3289 — top 5 activating tokens:
+
+  168.386  token=            '.'   context: Δραματικά είναι τα στοιχεία για την κατάσταση στην αγορά εργασίας στην χώρας μας
+  162.418  token=            '.'   context: Self-driving electric cars? Rad!! A Hyperloop train that can get you from New Yo
+  162.109  token=            '.'   context: Fox News Channel pundits Greta Van Susteren and Erick Erickson have gone to war 
+  161.757  token=            '.'   context: According to court documents, 29-year-old Markus Kaarma of Missoula, Mont. was i
+  161.663  token=            '.'   context: Poison Ivy is a 1985 American made-for-television romantic comedy film starring 
+
+=== Rank 2: Feature 3348 (top activation: 28.609) ===
+Feature 3348 — top 5 activating tokens:
+
+  28.609  token=            '.'   context: At MWC 2016, OPPO released its new SmartSensor image stabilization technology. A
+  28.554  token=            '.'   context: A local police officer says it’s time to legalize marijuana. Dan Mulligan is als
+  28.547  token=            '.'   context: Square Enix held a quite eventful keynote during the Final Fantasy XIV Fan fest 
+  28.544  token=            '.'   context: For the past 30 years, Shin and Tatsuko Okawara spent their lives working as org
+  28.536  token=            '.'   context: Dane Carbaugh, who edits the Blazers blog AYoungSabonis.com, will be providing t
+
+=== Rank 3: Feature 1150 (top activation: 10.500) ===
+Feature 1150 — top 5 activating tokens:
+
+  10.500  token=            '’'   context: We’ve been working for some time—with your help—to ensure that improvidently gra
+  10.441  token=            '’'   context: Have you ever looked at a dog, splayed out on a living room floor, and thought, 
+  10.286  token=            '’'   context: Pro-choicers clash with anti-choicers in North Carolina in 2012. Photo by Robyn 
+  10.204  token=            '’'   context: Why Abortion is Moral
+
+All of the arguments against abortion boil down to six sp
+  10.187  token=            '’'   context: President Obama said Republican opposition to ObamaCare should disqualify them f
+
+=== Rank 4: Feature 63 (top activation: 10.059) ===
+Feature 63 — top 5 activating tokens:
+
+  10.059  token=            '.'   context: Δραματικά είναι τα στοιχεία για την κατάσταση στην αγορά εργασίας στην χώρας μας
+  7.487  token=            '.'   context: Western Rite Orthodoxy, Western Orthodoxy, or Orthodox Western Rite are terms us
+  6.462  token=            '.'   context: Minister of Public Safety and Solicitor General Mike Farnworth told municipal le
+  6.301  token=            '.'   context: Poison Ivy is a 1985 American made-for-television romantic comedy film starring 
+  6.194  token=            '.'   context: New York (CNN) -- A new prosecution document in the Dominique Strauss-Kahn case 
+
+=== Rank 5: Feature 1373 (top activation: 9.475) ===
+Feature 1373 — top 5 activating tokens:
+
+  9.475  token=            '’'   context: Our ancestors made their mark in caves, on stones leaving a record of their meth
+  9.430  token=            '’'   context: I assume I was aware of this when the new playoff formats were announced, but if
+  9.310  token=            '’'   context: A tech company called socialautopsy.com is preparing to launch, and things are a
+  9.209  token=            '’'   context: Nick Di Paolo unleashes on the celebrities who turned the SAG Awards into a prog
+  9.190  token=            '’'   context: Some of the great science fiction movies are timeless. In other words, their por
+
+=== Rank 6: Feature 4044 (top activation: 9.390) ===
+Feature 4044 — top 5 activating tokens:
+
+  9.390  token=            '-'   context: Get the biggest daily news stories by email Subscribe Thank you for subscribing 
+  9.290  token=            '-'   context: EUREKA, Calif. – Police arrested a suspect who allegedly shot a man using a shot
+  9.194  token=            '-'   context: ES News Email Enter your email address Please enter an email address Email addre
+  9.178  token=            '-'   context: Before being gunned down, in an apparent Islamic State-inspired terrorist attack
+  9.177  token=            '-'   context: VALLEJO — The alleged California Highway Patrol “game” of secretly trading expli
+
+=== Rank 7: Feature 1437 (top activation: 8.958) ===
+Feature 1437 — top 5 activating tokens:
+
+  8.958  token=            '’'   context: Audi announced Thursday that Filipe Albuquerque will be joining the factory squa
+  8.542  token=            '’'   context: WASHINGTON—Congressional Republicans on Tuesday announced a new investigation in
+  8.520  token=            '’'   context: The American Civil Rights Union’s Robert Knight, who has been encouraging Republ
+  8.517  token=            '’'   context: S. Africa ruling party wants to pull out of ICC
+
+South Africa’s ruling party say
+  8.486  token=            '’'   context: Canada’s first female prime minister ripped into Republican presidential candida
+
+=== Rank 8: Feature 1141 (top activation: 8.957) ===
+Feature 1141 — top 5 activating tokens:
+
+  8.957  token=            '�'   context: This video is no longer available
+
+This video was hosted on Vidme, which is no l
+  8.862  token=            '�'   context: This video is no longer available
+
+This video was hosted on Vidme, which is no l
+  8.797  token=            '�'   context: This video is no longer available
+
+This video was hosted on Vidme, which is no l
+  8.606  token=            '�'   context: This video is no longer available
+
+This video was hosted on Vidme, which is no l
+  8.418  token=            '�'   context: This video is no longer available
+
+This video was hosted on Vidme, which is no l
+
+=== Rank 9: Feature 2061 (top activation: 8.831) ===
+Feature 2061 — top 5 activating tokens:
+
+  8.831  token=            'S'   context: Copyright 2019 Nexstar Broadcasting, Inc. All rights reserved. This material may
+  8.762  token=            'S'   context: Lawrence J. Joyce, an attorney and practicing pharmacist from Poplar Grove, says
+  8.684  token=            'S'   context: A Saudi man arrested at Detroit Metropolitan Airport after federal agents said h
+  8.663  token=            'S'   context: A Burnsville woman cannot hold Iowa State University responsible for her alleged
+  8.653  token=            'S'   context: A convicted child molester won his sentencing appeal and will not have to retroa
+
+=== Rank 10: Feature 2034 (top activation: 8.735) ===
+Feature 2034 — top 5 activating tokens:
+
+  8.735  token=           ',”'   context: MONTREAL—Ben Scrivens is getting a chance to keep his NHL career alive with the 
+  8.730  token=           ',”'   context: DENVER (CBS4)– The driver who struck and killed a young woman in downtown Denver
+  8.710  token=           ',”'   context: Share Pinterest
+
+Email
+
+Lance Stroll scored his first Formula 1 points with a st
+  8.640  token=           ',”'   context: Audi announced Thursday that Filipe Albuquerque will be joining the factory squa
+  8.636  token=           ',”'   context: Republican presidential candidate Donald Trump held a rally at Ladd-Peebles Stad
+
+=== Rank 11: Feature 3311 (top activation: 8.592) ===
+Feature 3311 — top 5 activating tokens:
+
+  8.592  token=            '-'   context: A Connecticut teen's bucket list has gone viral following her tragic death earli
+  8.516  token=            '-'   context: The details emerged as Vince Li faced his murder trial by pleading not guilty.
+
+
+  8.507  token=            '-'   context: Following the largest case of its type in Denmark, in October 2014 Gottfrid Svar
+  8.496  token=            '-'   context: Hoddle Street killer Julian Knight loses High Court fight against laws keeping h
+  8.445  token=            '-'   context: VALLEJO — The alleged California Highway Patrol “game” of secretly trading expli
+
+=== Rank 12: Feature 2000 (top activation: 8.424) ===
+Feature 2000 — top 5 activating tokens:
+
+  8.424  token=          ' un'   context: Hey guys, Welcome to the Official IW Avatar Design Contest!
+
+How does it work?
+
+
+  8.384  token=          ' un'   context: The man who wished to be eaten seemed quite shy when he walked into a Toronto ps
+  8.358  token=          ' un'   context: If you're waiting for someone who has to drive in San Francisco, especially arou
+  8.330  token=          ' un'   context: Two aspiring rappers from the rough streets of Washington, D.C. and its outer re
+  8.326  token=          ' un'   context: First edition (UK)
+
+The Incredible Journey (1961), by Scottish author Sheila Bur
+
+=== Rank 13: Feature 3244 (top activation: 8.285) ===
+Feature 3244 — top 5 activating tokens:
+
+  8.285  token=          ' re'   context: As part of our collaboration with Elizabeth St gallery, FLINT is curating the wo
+  8.247  token=          ' re'   context: In the first instalment of a series on the threat of water scarcity, Pilita Clar
+  8.240  token=          ' re'   context: Fearing Death and Curing Aging
+
+You are going to die. It may take some time, but
+  8.164  token=          ' re'   context: UPDATE 2
+
+May 13, 2016
+
+Seed of Life is a meditative game in which you deflect c
+  8.145  token=          ' re'   context: “NO ONE,” the coach says to a locker room full of determined-looking young Ameri
+
+=== Rank 14: Feature 3749 (top activation: 8.250) ===
+Feature 3749 — top 5 activating tokens:
+
+  8.250  token=           '\n'   context: You must sign in or register to continue reading content.
+
+EVERETT — The Majesti
+  8.243  token=           '\n'   context: Michelle Obama fed her husband's feud with Donald Trump on Friday as she gave a 
+  8.236  token=           '\n'   context: A Chinese tycoon who raised eyebrows this week by traveling to New York with the
+  8.117  token=           '\n'   context: ISLAMABAD (AP) — Former Pakistani military ruler Pervez Musharraf fled court in 
+  8.105  token=           '\n'   context: The governing Liberals are trying to hide documents related to the costly cancel
+
+=== Rank 15: Feature 3568 (top activation: 8.200) ===
+Feature 3568 — top 5 activating tokens:
+
+  8.200  token=            '.'   context: In this 2008 photo, Lt. Gen. Raymond “Tony” Thomas talks with men in the Sulayma
+  8.158  token=            '.'   context: This graphic from NSA internal training materials, provided to The Washington Po
+  8.105  token=            '.'   context: The U.S. is suing Bank of America on behalf of Fannie Mae and Freddie Mac, with 
+  8.096  token=            '.'   context: LANSING — Michigan lawmakers have voted to no longer require that someone be ins
+  8.094  token=            '.'   context: The world reacted with shock, awe and no small measure of disbelief as voters ma
+
+=== Rank 16: Feature 2201 (top activation: 8.125) ===
+Feature 2201 — top 5 activating tokens:
+
+  8.125  token=           ' .'   context: . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+  8.112  token=           ' .'   context: . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+  8.094  token=           ' .'   context: . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+  8.076  token=           ' .'   context: . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+  8.063  token=           ' .'   context: . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+
+=== Rank 17: Feature 1154 (top activation: 8.030) ===
+Feature 1154 — top 5 activating tokens:
+
+  8.030  token=           ' U'   context: CLOSE Justin Mack and diversity reporter Stephanie Wang look ahead to what's nex
+  7.872  token=           ' U'   context: This morning, Martin Shkreli, elfin plague of the pharmaceutical world, was arre
+  7.862  token=           ' U'   context: CLOSE The State Department has issued a worldwide travel alert during the bigges
+  7.859  token=           ' U'   context: Marine Corps personnel move a transfer case containing the remains of Marine Cor
+  7.851  token=           ' U'   context: EPA says 1 million gallons of oil may have spilled in Mich. river, governor crit
+
+=== Rank 18: Feature 432 (top activation: 8.001) ===
+Feature 432 — top 5 activating tokens:
+
+  8.001  token=            'G'   context: On the heels of the passage of mandatory genetically engineered (GE) food labeli
+  7.968  token=            'R'   context: SYDNEY (Reuters) - The United States has indicated it is open to a free trade ag
+  7.921  token=           'TT'   context: This article is a joint publication of Foreign Policy In Focus and TheNation.com
+  7.877  token=           'ES'   context: "ESRB" redirects here. For the European financial agency, see European Systemic 
+  7.854  token=           'SP'   context: PETALING JAYA: Private car owners whose vehicles have been identified by the aut
+
+=== Rank 19: Feature 3440 (top activation: 7.957) ===
+Feature 3440 — top 5 activating tokens:
+
+  7.957  token=      'Reuters'   context: March 13 (Reuters) - U.S. investigators suspect that Malaysia Airlines Flight 37
+  7.946  token=      'Reuters'   context: MANILA (Reuters) - The Philippine government derided Catholic bishops on Sunday 
+  7.946  token=      'Reuters'   context: MANILA (Reuters) - Philippine Vice President Jejomar Binay on Monday vowed to am
+  7.924  token=      'Reuters'   context: DUBAI, April 4 (Reuters) - Iran has partially lifted a ban on women attending me
+  7.902  token=      'Reuters'   context: NEW YORK, July 6 (Reuters) - A former Goldman Sachs (GS.N) computer programmer a
+
+=== Rank 20: Feature 975 (top activation: 7.753) ===
+Feature 975 — top 5 activating tokens:
+
+  7.753  token=        ' wasn'   context: Jennifer Tress begins a presentation at George Mason University with a photograp
+  7.633  token=        ' wasn'   context: A Designer’s Sublime Text Setup
+
+Matej Latin Blocked Unblock Follow Following De
+  7.606  token=        ' wasn'   context: Ross Ulbricht, convicted last February of being the mastermind behind the Silk R
+  7.573  token=        ' wasn'   context: Best of the Best: The Book Review has had its say; a few weeks ago, we named our
+  7.526  token=        ' wasn'   context: Sometimes checking a project one more time can be quite amusing. It helps to see
+
