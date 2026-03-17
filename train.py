@@ -40,8 +40,8 @@ os.makedirs("activations", exist_ok=True)
 if os.path.exists(ACTIVATIONS_PATH):
     print(f"Loading cached activations from {ACTIVATIONS_PATH}...", flush=True)
     load_device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    all_activations = torch.load(ACTIVATIONS_PATH, map_location=load_device)
-    print(f"Activations loaded: shape={all_activations.shape}, dtype={all_activations.dtype}, "
+    all_activations = torch.load(ACTIVATIONS_PATH, map_location=load_device, mmap=True, weights_only=True)
+    print(f"Activations loaded (mmap): shape={all_activations.shape}, dtype={all_activations.dtype}, "
           f"size={all_activations.nelement() * all_activations.element_size() / 1e9:.2f} GB (on {load_device})", flush=True)
 else:
     # Find the latest checkpoint to resume from
