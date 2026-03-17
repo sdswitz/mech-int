@@ -16,7 +16,7 @@ print(f"PyTorch: {torch.__version__}")
 print(f"CUDA available: {torch.cuda.is_available()}")
 if torch.cuda.is_available():
     print(f"CUDA device: {torch.cuda.get_device_name(0)}")
-    print(f"CUDA memory: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+    print(f"CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 print(flush=True)
 
 parser = argparse.ArgumentParser()
@@ -39,9 +39,10 @@ os.makedirs("activations", exist_ok=True)
 
 if os.path.exists(ACTIVATIONS_PATH):
     print(f"Loading cached activations from {ACTIVATIONS_PATH}...", flush=True)
-    all_activations = torch.load(ACTIVATIONS_PATH)
+    load_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    all_activations = torch.load(ACTIVATIONS_PATH, map_location=load_device)
     print(f"Activations loaded: shape={all_activations.shape}, dtype={all_activations.dtype}, "
-          f"size={all_activations.nelement() * all_activations.element_size() / 1e9:.2f} GB", flush=True)
+          f"size={all_activations.nelement() * all_activations.element_size() / 1e9:.2f} GB (on {load_device})", flush=True)
 else:
     # Find the latest checkpoint to resume from
     start_text = 0
@@ -114,7 +115,7 @@ print(f"Moving activations to {device}...", flush=True)
 all_activations = all_activations.to(device)
 print(f"Activations on device.", flush=True)
 if torch.cuda.is_available():
-    print(f"GPU memory after activations: {torch.cuda.memory_allocated() / 1e9:.2f} GB / {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB", flush=True)
+    print(f"GPU memory after activations: {torch.cuda.memory_allocated() / 1e9:.2f} GB / {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB", flush=True)
 
 print(f"Creating SAE (d={d}, m={m})...", flush=True)
 SAE = SparseAutoEncoder(d=d, m=m)
