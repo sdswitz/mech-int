@@ -2,16 +2,27 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
+import math
+import argparse
 import transformer_lens
 import pandas as pd
 from sae import SparseAutoEncoder, SAEloss
 from datasets import load_dataset
 import tqdm
 
-MODEL_PATH = "sae_model.pt"
-# if os.path.exists(MODEL_PATH):
-#     print(f"Model already exists at {MODEL_PATH}, skipping training.")
-#     exit(0)
+parser = argparse.ArgumentParser()
+parser.add_argument("--expansion", type=int, default=8, help="Expansion factor (e.g. 4, 8, 16, 32)")
+parser.add_argument("--lam", type=float, default=3.0, help="L1 penalty target")
+parser.add_argument("--epochs", type=int, default=50000)
+args = parser.parse_args()
+
+EXPANSION = args.expansion
+os.makedirs("saved_models", exist_ok=True)
+MODEL_PATH = f"saved_models/sae_model_{EXPANSION}x.pt"
+
+if os.path.exists(MODEL_PATH):
+    print(f"Model already exists at {MODEL_PATH}, skipping {EXPANSION}x training.")
+    exit(0)
 
 NUM_TEXTS = 50000
 ACTIVATIONS_PATH = f"activations/activations_{NUM_TEXTS}.pt"
@@ -57,11 +68,11 @@ else:
             del cache
             if (i + 1) % 5000 == 0:
                 checkpoint = torch.cat(all_activations, dim=0)
-                checkpoint_path = f"activations_checkpoint_{i + 1}.pt"
+                checkpoint_path = f"activations/activations_checkpoint_{i + 1}.pt"
                 torch.save(checkpoint, checkpoint_path)
                 print(f"Saved checkpoint to {checkpoint_path} ({i + 1}/{NUM_TEXTS} texts)")
                 # Delete previous checkpoint
-                prev_path = f"activations_checkpoint_{i + 1 - 5000}.pt"
+                prev_path = f"activations/activations_checkpoint_{i + 1 - 5000}.pt"
                 if os.path.exists(prev_path):
                     os.remove(prev_path)
 
@@ -73,11 +84,17 @@ print(f"Total activation vectors: {all_activations.shape[0]}")
 
 ## Hyperparameters
 d = all_activations.shape[-1]
-m = d * 8
+m = d * EXPANSION
 learning_rate = 3e-4
 batch_size = 4096
-EPOCHS = 20000
+EPOCHS = args.epochs
+WARMUP_STEPS = 2000
+LAM_TARGET = args.lam
+LAM_WARMUP_STEPS = 5000
+MAX_GRAD_NORM = 1.0
 interval = EPOCHS // 10
+
+print(f"Training {EXPANSION}x SAE: d={d}, m={m}, lam={LAM_TARGET}, epochs={EPOCHS}")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 all_activations = all_activations.to(device)
@@ -86,9 +103,18 @@ SAE = SparseAutoEncoder(d=d, m=m)
 SAE = SAE.to(device)
 optimizer = torch.optim.Adam(SAE.parameters(), lr=learning_rate)
 
+def lr_lambda(step):
+    if step < WARMUP_STEPS:
+        return step / WARMUP_STEPS
+    progress = (step - WARMUP_STEPS) / max(1, EPOCHS - WARMUP_STEPS)
+    return 0.5 * (1.0 + math.cos(math.pi * progress))
+
+scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
 feature_ever_active = torch.zeros(m, dtype=torch.bool, device=device)
 
-METRICS_PATH = "training_metrics.csv"
+os.makedirs("training_metrics", exist_ok=True)
+METRICS_PATH = f"training_metrics/training_metrics_{EXPANSION}x.csv"
 metrics_rows = []
 
 for i in range(EPOCHS):
@@ -98,7 +124,8 @@ for i in range(EPOCHS):
     mse = F.mse_loss(xhat, x)
     l1 = f.abs().mean()
     l0 = (f > 0).float().mean()
-    loss = SAEloss(xhat, x, f, lam=3)
+    lam = LAM_TARGET * min(1.0, i / LAM_WARMUP_STEPS) if LAM_WARMUP_STEPS > 0 else LAM_TARGET
+    loss = SAEloss(xhat, x, f, lam=lam)
 
     feature_ever_active |= (f > 0).any(dim=0)
     dead_features = (~feature_ever_active).sum().item()
@@ -113,12 +140,15 @@ for i in range(EPOCHS):
     })
 
     if i % interval == 0 or i == EPOCHS - 1:
-        print(f"step {i}: loss={loss:.4f} mse={mse:.4f} l0={l0:.4f} dead={dead_features}")
+        current_lr = scheduler.get_last_lr()[0]
+        print(f"step {i}: loss={loss:.4f} mse={mse:.4f} l0={l0:.4f} dead={dead_features} lr={current_lr:.2e} lam={lam:.2f}")
         pd.DataFrame(metrics_rows).to_csv(METRICS_PATH, index=False)
 
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
+    torch.nn.utils.clip_grad_norm_(SAE.parameters(), MAX_GRAD_NORM)
     optimizer.step()
+    scheduler.step()
     with torch.no_grad():
         SAE.W_dec.data = SAE.W_dec.data / SAE.W_dec.data.norm(dim=1, keepdim=True)
 
