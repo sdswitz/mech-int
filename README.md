@@ -5,57 +5,62 @@
 Training and inspecting sparse autoencoders (SAEs) on **Pythia-70M, layer 3 residual stream** (512-dimensional activations).
 
 - **SAE architecture:** 8x expansion factor (4096 features), tied decoder weights
-- **Training hyperparameters:** L1 lambda=3, lr=3e-4, 20K epochs on ~6M tokens from OpenWebText
+- **Training hyperparameters:** L1 lambda=3, lr=3e-4, cosine LR schedule with linear warmup, lambda warmup, gradient clipping
 - **Results:** L0 ~ 0.05, MSE ~ 0.02, 4 dead features out of 4096
 - **Notable features discovered:**
   - "Reuters" detector (fires on Reuters-sourced news text)
   - "Feb" detector (month-of-February token)
   - Prefix detectors (" un", " re")
-- **Pipeline:** `train.py` for training, `inspect-features.ipynb` for feature analysis, `colab-training.ipynb` for GPU training via Colab
+- **Pipeline:** `train.py` for training (supports `--expansion` and `--lam` CLI args), `inspect-features.ipynb` for feature analysis, `ablation.ipynb` for causal ablation, `colab-training.ipynb` for GPU training via Colab
 
 ---
 
 ## Roadmap
 
-Suggested implementation order: 1 → 4 → 2 → 3
+Suggested next steps: 3 (finish ablation) → 2 → cross-expansion analysis
 
-### 1. Training Improvements
+### 1. Training Improvements ✅
 
-Improve SAE training quality and stability before scaling up.
-
-- Add a learning rate scheduler (cosine decay with linear warmup)
-- Implement lambda warmup (start low, ramp to target value over early training)
-- Scale to longer training runs (50K–100K epochs)
-- Add gradient clipping to stabilize training
-- **Modify:** `train.py`
+- Cosine LR schedule with linear warmup (2K steps)
+- Lambda warmup (ramps from 0 to target over 5K steps)
+- 50K epochs (up from 20K)
+- Gradient clipping (max norm 1.0)
+- CLI args for expansion factor and lambda (`python train.py --expansion 16 --lam 3`)
+- Auto-skip if model already exists
 
 ### 2. Multi-Expansion-Factor Training
 
 Train SAEs at multiple widths to study how features split and refine at larger scales.
 
-- Parameterize the expansion factor as a CLI argument
-- Train at 4x, 8x, 16x, and 32x expansion
+- `train.py` already supports `--expansion 4/8/16/32` with per-expansion output files
+- Train remaining expansion factors, tuning lambda empirically per scale
 - Compare learned features across scales using decoder cosine similarity
 - Detect feature splitting (one feature at small scale → multiple features at larger scale)
-- Document recommended lambda values per expansion factor
-- **Modify:** `train.py`; add analysis section to a notebook
 
-### 3. Causal Ablation Pipeline
+### 3. Causal Ablation Pipeline (in progress)
 
-Move beyond correlation to measure the causal importance of individual features.
+Measure the causal importance of individual features. **File:** `ablation.ipynb`
 
-- Use TransformerLens hooks to subtract a feature's contribution from the residual stream
-- Measure effect via KL divergence on output logits and top-token changes
-- Batch-ablate all features to produce a causal importance ranking
-- **Create:** `ablation.ipynb`
+**Done:**
+- Single-feature ablation via TransformerLens hooks (subtract `f_i * W_dec[i]` from residual stream)
+- KL divergence between clean and ablated output distributions
+- Per-token KL breakdown and top-5 prediction comparison
+- Greedy generation comparison (clean vs ablated)
 
-### 4. Decoder Weight Cosine Similarity Analysis
+**Key finding:** Ablating the "Reuters" detector (feature 3440) produces near-zero KL and identical greedy output — suggesting it's a recognizer/label rather than a causal driver of generation at layer 3.
 
-Understand the geometry of the learned feature dictionary.
+**Next steps for ablation:**
+- Batch-ablate all 4096 features across a diverse eval set (100–500 texts) to rank features by mean KL divergence
+- Identify which features are causally important vs. merely correlated
+- Cross-reference causal importance ranking with interpretability scores from `inspect-features.ipynb`
+- Investigate whether causally important features tend to be interpretable or polysemantic
+- Try ablating multiple related features simultaneously to detect feature circuits
 
-- Compute pairwise cosine similarity of all decoder weight vectors
-- Plot the similarity distribution as a histogram
-- Inspect high-similarity pairs to find redundant or related features
-- Run hierarchical clustering and visualize as a dendrogram
-- Compare similarity structure across expansion factors (after completing section 2)
-- **Add to:** `inspect-features.ipynb`
+### 4. Decoder Weight Cosine Similarity Analysis ✅
+
+- Pairwise cosine similarity of all decoder vectors
+- Similarity distribution histogram
+- High-similarity pair inspection (filtered to multi-character tokens)
+- Hierarchical clustering dendrogram
+- Reverse token search (`search_token()`) to find which features fire on a given token
+- **Added to:** `inspect-features.ipynb`

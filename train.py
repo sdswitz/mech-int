@@ -4,11 +4,20 @@ import torch.nn.functional as F
 import os
 import math
 import argparse
+import sys
 import transformer_lens
 import pandas as pd
 from sae import SparseAutoEncoder, SAEloss
 from datasets import load_dataset
 import tqdm
+
+print(f"Python: {sys.version}")
+print(f"PyTorch: {torch.__version__}")
+print(f"CUDA available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"CUDA device: {torch.cuda.get_device_name(0)}")
+    print(f"CUDA memory: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+print(flush=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--expansion", type=int, default=8, help="Expansion factor (e.g. 4, 8, 16, 32)")
@@ -29,8 +38,10 @@ ACTIVATIONS_PATH = f"activations/activations_{NUM_TEXTS}.pt"
 os.makedirs("activations", exist_ok=True)
 
 if os.path.exists(ACTIVATIONS_PATH):
-    print(f"Loading cached activations from {ACTIVATIONS_PATH}")
+    print(f"Loading cached activations from {ACTIVATIONS_PATH}...", flush=True)
     all_activations = torch.load(ACTIVATIONS_PATH)
+    print(f"Activations loaded: shape={all_activations.shape}, dtype={all_activations.dtype}, "
+          f"size={all_activations.nelement() * all_activations.element_size() / 1e9:.2f} GB", flush=True)
 else:
     # Find the latest checkpoint to resume from
     start_text = 0
@@ -94,14 +105,26 @@ LAM_WARMUP_STEPS = 5000
 MAX_GRAD_NORM = 1.0
 interval = EPOCHS // 10
 
-print(f"Training {EXPANSION}x SAE: d={d}, m={m}, lam={LAM_TARGET}, epochs={EPOCHS}")
+print(f"Training {EXPANSION}x SAE: d={d}, m={m}, lam={LAM_TARGET}, epochs={EPOCHS}", flush=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-all_activations = all_activations.to(device)
+print(f"Using device: {device}", flush=True)
 
+print(f"Moving activations to {device}...", flush=True)
+all_activations = all_activations.to(device)
+print(f"Activations on device.", flush=True)
+if torch.cuda.is_available():
+    print(f"GPU memory after activations: {torch.cuda.memory_allocated() / 1e9:.2f} GB / {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB", flush=True)
+
+print(f"Creating SAE (d={d}, m={m})...", flush=True)
 SAE = SparseAutoEncoder(d=d, m=m)
 SAE = SAE.to(device)
+print(f"SAE on device. Parameters: {sum(p.numel() for p in SAE.parameters()) / 1e6:.1f}M", flush=True)
+if torch.cuda.is_available():
+    print(f"GPU memory after SAE: {torch.cuda.memory_allocated() / 1e9:.2f} GB", flush=True)
+
 optimizer = torch.optim.Adam(SAE.parameters(), lr=learning_rate)
+print(f"Optimizer created.", flush=True)
 
 def lr_lambda(step):
     if step < WARMUP_STEPS:
@@ -117,8 +140,13 @@ os.makedirs("training_metrics", exist_ok=True)
 METRICS_PATH = f"training_metrics/training_metrics_{EXPANSION}x.csv"
 metrics_rows = []
 
+print(f"Starting training loop...", flush=True)
 for i in range(EPOCHS):
+    if i == 0:
+        print(f"Step 0: sampling batch...", flush=True)
     x = all_activations[torch.randperm(all_activations.shape[0])[:batch_size]].to(device)
+    if i == 0:
+        print(f"Step 0: forward pass...", flush=True)
     xhat, f = SAE(x)
 
     mse = F.mse_loss(xhat, x)
@@ -141,7 +169,8 @@ for i in range(EPOCHS):
 
     if i % interval == 0 or i == EPOCHS - 1:
         current_lr = scheduler.get_last_lr()[0]
-        print(f"step {i}: loss={loss:.4f} mse={mse:.4f} l0={l0:.4f} dead={dead_features} lr={current_lr:.2e} lam={lam:.2f}")
+        mem_str = f" gpu={torch.cuda.memory_allocated() / 1e9:.2f}GB" if torch.cuda.is_available() else ""
+        print(f"step {i}: loss={loss:.4f} mse={mse:.4f} l0={l0:.4f} dead={dead_features} lr={current_lr:.2e} lam={lam:.2f}{mem_str}", flush=True)
         pd.DataFrame(metrics_rows).to_csv(METRICS_PATH, index=False)
 
     optimizer.zero_grad(set_to_none=True)
