@@ -145,7 +145,7 @@ print(f"Starting training loop...", flush=True)
 for i in range(EPOCHS):
     if i == 0:
         print(f"Step 0: sampling batch...", flush=True)
-    x = all_activations[torch.randperm(all_activations.shape[0])[:batch_size]].to(device)
+    x = all_activations[torch.randint(all_activations.shape[0], (batch_size,), device=device)]
     if i == 0:
         print(f"Step 0: forward pass...", flush=True)
     xhat, f = SAE(x)
