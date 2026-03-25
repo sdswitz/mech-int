@@ -2,3 +2,6 @@ __pycache__/
 *.pt
 *.csv
 .ipynb_checkpoints/
+results.tsv
+run.log
+autoresearch/saved_models/
