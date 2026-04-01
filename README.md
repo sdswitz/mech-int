@@ -1,66 +1,107 @@
 # Mechanistic Interpretability: Sparse Autoencoder Pipeline
 
-## Current State
+## Current Workflow
 
-Training and inspecting sparse autoencoders (SAEs) on **Pythia-70M, layer 3 residual stream** (512-dimensional activations).
+This repository trains and analyzes sparse autoencoders (SAEs) on **Pythia-70M, layer 3 residual stream** activations. The default research path is now script-first:
 
-- **SAE architecture:** 8x expansion factor (4096 features), tied decoder weights
-- **Training hyperparameters:** L1 lambda=3, lr=3e-4, cosine LR schedule with linear warmup, lambda warmup, gradient clipping
-- **Results:** L0 ~ 0.05, MSE ~ 0.02, 4 dead features out of 4096
-- **Notable features discovered:**
-  - "Reuters" detector (fires on Reuters-sourced news text)
-  - "Feb" detector (month-of-February token)
-  - Prefix detectors (" un", " re")
-- **Pipeline:** `train.py` for training (supports `--expansion` and `--lam` CLI args), `inspect-features.ipynb` for feature analysis, `ablation.ipynb` for causal ablation, `colab-training.ipynb` for GPU training via Colab
+- Shared code lives in `mechint/`
+- Reproducible entrypoints live in `scripts/`
+- New experiment artifacts live under `runs/`
+- Shared activation caches stay in `activations/`
+- Legacy checkpoints in `saved_models/` and CSVs in `training_metrics/` remain readable but are no longer the primary output layout
 
----
+The canonical SAE implementation uses **separate encoder and decoder weights** with decoder-row renormalization after each optimizer step.
 
-## Roadmap
+## Default Pipeline
 
-Suggested next steps: 3 (finish ablation) → 2 → cross-expansion analysis
+### 1. Collect activations
 
-### 1. Training Improvements ✅
+```bash
+python scripts/collect_activations.py \
+  --model pythia-70m \
+  --layer 3 \
+  --hook blocks.3.hook_resid_post \
+  --dataset openwebtext \
+  --num-texts 50000 \
+  --output activations/activations_50000.pt
+```
 
-- Cosine LR schedule with linear warmup (2K steps)
-- Lambda warmup (ramps from 0 to target over 5K steps)
-- 50K epochs (up from 20K)
-- Gradient clipping (max norm 1.0)
-- CLI args for expansion factor and lambda (`python train.py --expansion 16 --lam 3`)
-- Auto-skip if model already exists
+### 2. Train an SAE
 
-### 2. Multi-Expansion-Factor Training
+```bash
+python scripts/train_sae.py \
+  --activations-path activations/activations_50000.pt \
+  --activation-dim 512 \
+  --expansion 8 \
+  --lam 3 \
+  --epochs 50000
+```
 
-Train SAEs at multiple widths to study how features split and refine at larger scales.
+This creates a run directory under `runs/` with:
 
-- `train.py` already supports `--expansion 4/8/16/32` with per-expansion output files
-- Train remaining expansion factors, tuning lambda empirically per scale
-- Compare learned features across scales using decoder cosine similarity
-- Detect feature splitting (one feature at small scale → multiple features at larger scale)
+- `config.json`
+- `metrics.csv`
+- `checkpoint.pt`
+- `summary.json`
+- `manifest.json`
 
-### 3. Causal Ablation Pipeline (in progress)
+### 3. Evaluate a run
 
-Measure the causal importance of individual features. **File:** `ablation.ipynb`
+```bash
+python scripts/eval_sae.py --run-dir runs/<run-name>
+```
 
-**Done:**
-- Single-feature ablation via TransformerLens hooks (subtract `f_i * W_dec[i]` from residual stream)
-- KL divergence between clean and ablated output distributions
-- Per-token KL breakdown and top-5 prediction comparison
-- Greedy generation comparison (clean vs ablated)
+### 4. Rank features by causal effect
 
-**Key finding:** Ablating the "Reuters" detector (feature 3440) produces near-zero KL and identical greedy output — suggesting it's a recognizer/label rather than a causal driver of generation at layer 3.
+```bash
+python scripts/batch_ablate.py \
+  --checkpoint runs/<run-name>/checkpoint.pt \
+  --config runs/<run-name>/config.json \
+  --eval-texts-path eval_texts.txt \
+  --output runs/<run-name>/ablation.csv
+```
 
-**Next steps for ablation:**
-- Batch-ablate all 4096 features across a diverse eval set (100–500 texts) to rank features by mean KL divergence
-- Identify which features are causally important vs. merely correlated
-- Cross-reference causal importance ranking with interpretability scores from `inspect-features.ipynb`
-- Investigate whether causally important features tend to be interpretable or polysemantic
-- Try ablating multiple related features simultaneously to detect feature circuits
+### 5. Compare features across checkpoints
 
-### 4. Decoder Weight Cosine Similarity Analysis ✅
+```bash
+python scripts/compare_expansions.py \
+  --checkpoints saved_models/sae_model_4x.pt saved_models/sae_model_8x.pt \
+  --activation-dim 512 \
+  --output runs/comparisons/4x_vs_8x.csv
+```
 
-- Pairwise cosine similarity of all decoder vectors
-- Similarity distribution histogram
-- High-similarity pair inspection (filtered to multi-character tokens)
-- Hierarchical clustering dendrogram
-- Reverse token search (`search_token()`) to find which features fire on a given token
-- **Added to:** `inspect-features.ipynb`
+## Manual Research Utilities
+
+The notebooks remain for exploration, but core logic should move through the package and scripts:
+
+- `inspect-features.ipynb`: canonical inspection notebook
+- `ablation.ipynb`: canonical ablation notebook
+- `notebooks/archive/`: archived scratch and duplicate notebooks
+
+Key reusable functions now live in:
+
+- `mechint.analysis`
+- `mechint.ablation`
+- `mechint.eval`
+- `mechint.data`
+
+## Backward Compatibility
+
+- `python train.py ...` still works and now forwards to `scripts/train_sae.py`
+- `from sae import SparseAutoEncoder` still works and now re-exports the canonical implementation from `mechint.sae`
+- Existing legacy checkpoints in `saved_models/` can be evaluated by the new scripts
+
+## Validation
+
+Run:
+
+```bash
+python check_paths.py
+python -m unittest tests.test_pipeline
+```
+
+## Notes
+
+- The default training path uses a deterministic held-out validation split from the cached activation tensor.
+- Training streams random batches from CPU-backed activations instead of moving the full cache onto the accelerator.
+- The repo also contains an `autoresearch/` subtree, but the default manual research pipeline is intentionally separate and should be stabilized first.

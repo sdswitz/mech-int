@@ -1,88 +1,100 @@
-"""Verify that all directories and expected files for the training pipeline exist."""
+"""Validate the default research pipeline layout and flag legacy artifacts."""
 
-import os
+from __future__ import annotations
+
+from pathlib import Path
+import json
 import sys
 
-REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-os.chdir(REPO_ROOT)
 
-errors = []
-warnings = []
+REPO_ROOT = Path(__file__).resolve().parent
 
-# --- Required source files ---
 required_files = [
     "train.py",
     "sae.py",
+    "scripts/train_sae.py",
+    "scripts/eval_sae.py",
+    "scripts/batch_ablate.py",
+    "scripts/compare_expansions.py",
+    "mechint/sae.py",
+    "mechint/data.py",
+    "mechint/eval.py",
+    "plans/default-pipeline-refactor.md",
 ]
 
-for f in required_files:
-    if not os.path.exists(f):
-        errors.append(f"Missing required file: {f}")
-
-# --- Directories that train.py creates (verify or note) ---
 required_dirs = [
     "activations",
-    "saved_models",
-    "training_metrics",
+    "runs",
+    "scripts",
+    "mechint",
+    "tests",
 ]
 
-for d in required_dirs:
-    path = os.path.join(REPO_ROOT, d)
-    if not os.path.isdir(path):
-        warnings.append(f"Directory '{d}/' does not exist yet (will be created by train.py)")
+legacy_files = [
+    "train_wandb.py",
+    "colab-training.ipynb",
+    "training_metrics/training_metrics_3016.csv",
+]
 
-# --- Check for cached activations ---
-NUM_TEXTS = 50000
-activations_path = f"activations/activations_{NUM_TEXTS}.pt"
-if os.path.exists(activations_path):
-    print(f"  Found cached activations: {activations_path}")
+warnings: list[str] = []
+errors: list[str] = []
+
+for rel_path in required_files:
+    if not (REPO_ROOT / rel_path).exists():
+        errors.append(f"Missing required file: {rel_path}")
+
+for rel_path in required_dirs:
+    if not (REPO_ROOT / rel_path).exists():
+        warnings.append(f"Expected directory '{rel_path}/' does not exist yet")
+
+activation_path = REPO_ROOT / "activations" / "activations_50000.pt"
+if activation_path.exists():
+    print(f"  Found shared activations: {activation_path.relative_to(REPO_ROOT)}")
 else:
-    warnings.append(f"No cached activations at {activations_path} (will be generated on first run)")
+    warnings.append("No default activation cache found at activations/activations_50000.pt")
 
-# --- Check for trained models ---
-expansions_found = []
-for exp in [4, 8, 16, 32]:
-    model_path = f"saved_models/sae_model_{exp}x.pt"
-    metrics_path = f"training_metrics/training_metrics_{exp}x.csv"
-    if os.path.exists(model_path):
-        expansions_found.append(exp)
-        print(f"  Found trained model: {model_path}")
-        if not os.path.exists(metrics_path):
-            warnings.append(f"Model {model_path} exists but metrics file {metrics_path} is missing")
-    if os.path.exists(metrics_path):
-        print(f"  Found metrics: {metrics_path}")
+legacy_models = sorted((REPO_ROOT / "saved_models").glob("sae_model_*x.pt")) if (REPO_ROOT / "saved_models").exists() else []
+for model_path in legacy_models:
+    print(f"  Found legacy checkpoint: {model_path.relative_to(REPO_ROOT)}")
 
-# --- Check for stale flat-structure files from old train_wandb.py / colab ---
-stale_files = [
-    "sae_model.pt",
-    "training_metrics.csv",
-]
-for f in stale_files:
-    if os.path.exists(f):
-        warnings.append(f"Stale file from old layout: {f} (consider moving into saved_models/ or training_metrics/)")
+legacy_metrics = sorted((REPO_ROOT / "training_metrics").glob("training_metrics_*x.csv")) if (REPO_ROOT / "training_metrics").exists() else []
+for metrics_path in legacy_metrics:
+    print(f"  Found legacy metrics: {metrics_path.relative_to(REPO_ROOT)}")
 
-# --- Check inspect-features.ipynb references ---
-if os.path.exists("inspect-features.ipynb"):
-    import json
-    with open("inspect-features.ipynb") as nb:
-        src = json.dumps(json.load(nb))
-    # Check it's not pointing at the old un-suffixed model path
-    if "sae_model.pt" in src and "sae_model_{EXPANSION}x" not in src:
-        warnings.append("inspect-features.ipynb still references 'sae_model.pt' instead of 'sae_model_{EXPANSION}x.pt'")
+for rel_path in legacy_files:
+    if (REPO_ROOT / rel_path).exists():
+        warnings.append(f"Legacy or stale artifact present: {rel_path}")
 
-# --- Report ---
+archive_dir = REPO_ROOT / "notebooks" / "archive"
+if archive_dir.exists():
+    archived = sorted(p.name for p in archive_dir.glob("*.ipynb"))
+    print(f"  Archived notebooks: {', '.join(archived)}" if archived else "  Archived notebooks directory is empty")
+else:
+    warnings.append("Expected notebooks/archive/ for duplicate notebooks is missing")
+
+for notebook_name in ["inspect-features.ipynb", "ablation.ipynb"]:
+    if not (REPO_ROOT / notebook_name).exists():
+        warnings.append(f"Canonical notebook missing: {notebook_name}")
+
+sample_run_configs = sorted((REPO_ROOT / "runs").glob("*/config.json")) if (REPO_ROOT / "runs").exists() else []
+for config_path in sample_run_configs[:3]:
+    try:
+        json.loads(config_path.read_text())
+    except json.JSONDecodeError:
+        errors.append(f"Invalid JSON config: {config_path.relative_to(REPO_ROOT)}")
+
 print()
 if warnings:
     print(f"Warnings ({len(warnings)}):")
-    for w in warnings:
-        print(f"  ⚠ {w}")
+    for warning in warnings:
+        print(f"  - {warning}")
     print()
 
 if errors:
     print(f"Errors ({len(errors)}):")
-    for e in errors:
-        print(f"  ✗ {e}")
+    for error in errors:
+        print(f"  - {error}")
     print()
     sys.exit(1)
-else:
-    print("All paths look good.")
+
+print("Default research pipeline layout looks good.")
