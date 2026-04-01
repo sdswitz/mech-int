@@ -10,7 +10,8 @@ from pathlib import Path
 import torch
 
 from mechint.config import SAETrainConfig
-from mechint.data import deterministic_split_indices, random_batch_iterator
+from mechint.data import deterministic_split_indices, load_activations_with_splits, random_batch_iterator
+from mechint.eval import collect_feature_activity
 from mechint.sae import SparseAutoEncoder
 
 
@@ -45,6 +46,23 @@ class PipelineTests(unittest.TestCase):
         batch = next(iterator)
         self.assertEqual(batch.shape, (8, 4))
         self.assertEqual(batch.device.type, "cpu")
+
+    def test_split_loader_preserves_base_tensor(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "acts.pt"
+            original = torch.randn(64, 8)
+            torch.save(original, path)
+            all_acts, train_idx, val_idx = load_activations_with_splits(path, 0.25, 42)
+            self.assertEqual(all_acts.shape, original.shape)
+            self.assertEqual(train_idx.shape[0] + val_idx.shape[0], original.shape[0])
+
+    def test_collect_feature_activity_detects_dead_features(self):
+        model = SparseAutoEncoder(d=4, m=8)
+        with torch.no_grad():
+            model.b_enc.fill_(-100.0)
+        acts = torch.randn(32, 4)
+        active = collect_feature_activity(model, acts, device="cpu", eval_batch_size=8)
+        self.assertEqual(int(active.sum().item()), 0)
 
     def test_train_and_eval_scripts(self):
         with tempfile.TemporaryDirectory() as tmpdir:

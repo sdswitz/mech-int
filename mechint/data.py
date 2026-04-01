@@ -44,15 +44,31 @@ def deterministic_split_indices(n: int, val_fraction: float, seed: int) -> tuple
     return perm[n_val:], perm[:n_val]
 
 
-def load_train_val_activations(
+# NOTE: Removed — fancy indexing on mmap'd tensors forces a full copy (~24GB peak
+# for a 12GB activation file), defeating the purpose of mmap. Use
+# load_activations_with_splits() + split_batch_iterator() instead, which keep the
+# mmap'd tensor intact and index only at batch time.
+#
+# def load_train_val_activations(
+#     path: str | Path,
+#     val_fraction: float,
+#     seed: int,
+#     mmap: bool = True,
+# ) -> tuple[torch.Tensor, torch.Tensor]:
+#     all_acts = load_activation_tensor(path, mmap=mmap)
+#     train_idx, val_idx = deterministic_split_indices(all_acts.shape[0], val_fraction, seed)
+#     return all_acts[train_idx], all_acts[val_idx]
+
+
+def load_activations_with_splits(
     path: str | Path,
     val_fraction: float,
     seed: int,
     mmap: bool = True,
-) -> tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     all_acts = load_activation_tensor(path, mmap=mmap)
     train_idx, val_idx = deterministic_split_indices(all_acts.shape[0], val_fraction, seed)
-    return all_acts[train_idx], all_acts[val_idx]
+    return all_acts, train_idx, val_idx
 
 
 def random_batch_iterator(
@@ -66,6 +82,39 @@ def random_batch_iterator(
     while True:
         idx = torch.randint(n, (batch_size,), generator=gen)
         yield activations[idx].to(device)
+
+
+def split_batch_iterator(
+    activations: torch.Tensor,
+    indices: torch.Tensor,
+    batch_size: int,
+    device: str,
+    seed: int,
+) -> Generator[torch.Tensor, None, None]:
+    gen = torch.Generator().manual_seed(seed)
+    n = indices.shape[0]
+    while True:
+        positions = torch.randint(n, (batch_size,), generator=gen)
+        batch_idx = indices[positions]
+        yield activations[batch_idx].to(device)
+
+
+def iter_activation_batches(
+    activations: torch.Tensor,
+    indices: torch.Tensor | None,
+    batch_size: int,
+    device: str,
+) -> Generator[torch.Tensor, None, None]:
+    if indices is None:
+        total = activations.shape[0]
+        for start in range(0, total, batch_size):
+            yield activations[start : start + batch_size].to(device)
+        return
+
+    total = indices.shape[0]
+    for start in range(0, total, batch_size):
+        batch_idx = indices[start : start + batch_size]
+        yield activations[batch_idx].to(device)
 
 
 def timestamp_slug() -> str:

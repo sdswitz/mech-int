@@ -9,8 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import torch
 
 from mechint.config import SAETrainConfig
-from mechint.data import detect_device, get_git_commit, load_train_val_activations
-from mechint.eval import evaluate_sae, print_eval_summary, save_eval_summary
+from mechint.data import detect_device, get_git_commit, load_activations_with_splits
+from mechint.eval import collect_feature_activity, evaluate_sae, print_eval_summary, save_eval_summary
 from mechint.sae import SparseAutoEncoder
 
 
@@ -40,12 +40,11 @@ def main(argv: list[str] | None = None) -> None:
     checkpoint_path, config = load_checkpoint_and_config(args)
     device = detect_device(args.device or config.device)
 
-    train_acts, val_acts = load_train_val_activations(
+    all_acts, train_idx, val_idx = load_activations_with_splits(
         config.activations_path,
         val_fraction=config.val_fraction,
         seed=config.seed,
     )
-    _ = train_acts
     state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     if "W_dec" in state_dict:
         expansion = state_dict["W_dec"].shape[0] // config.activation_dim
@@ -54,14 +53,21 @@ def main(argv: list[str] | None = None) -> None:
     model = SparseAutoEncoder(d=config.activation_dim, m=config.num_features).to(device)
     model.load_state_dict(state_dict)
 
-    feature_ever_active = torch.ones(config.num_features, dtype=torch.bool, device=device)
+    feature_ever_active = collect_feature_activity(
+        model,
+        activations=all_acts,
+        indices=train_idx,
+        device=device,
+        eval_batch_size=config.eval_batch_size,
+    )
     summary = evaluate_sae(
         model=model,
-        val_acts=val_acts,
+        val_acts=all_acts,
         feature_ever_active=feature_ever_active,
         num_features=config.num_features,
         device=device,
         eval_batch_size=config.eval_batch_size,
+        val_indices=val_idx,
         run_metadata={
             "git_commit": get_git_commit(),
             "checkpoint_path": str(checkpoint_path),

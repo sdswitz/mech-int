@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> None:
     sae = load_sae_checkpoint(
         args.checkpoint,
         activation_dim=config.activation_dim,
-        expansion=config.expansion,
+        expansion=None,
         device=device,
     )
     model = build_transformer_model(config.model_name)

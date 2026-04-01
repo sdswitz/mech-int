@@ -15,10 +15,10 @@ from mechint.config import SAETrainConfig
 from mechint.data import (
     detect_device,
     get_git_commit,
-    load_train_val_activations,
+    load_activations_with_splits,
     make_run_dir,
-    random_batch_iterator,
     set_global_seed,
+    split_batch_iterator,
     write_run_manifest,
 )
 from mechint.eval import append_metrics_row, evaluate_sae, print_eval_summary, save_eval_summary
@@ -97,7 +97,7 @@ def main(argv: list[str] | None = None) -> None:
 
     config_path = config.save_json(run_root / "config.json")
     print(f"Loading activations from {config.activations_path}", flush=True)
-    train_acts, val_acts = load_train_val_activations(
+    all_acts, train_idx, val_idx = load_activations_with_splits(
         config.activations_path,
         val_fraction=config.val_fraction,
         seed=config.seed,
@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> None:
     model = SparseAutoEncoder(d=d, m=m).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     feature_ever_active = torch.zeros(m, dtype=torch.bool, device=device)
-    batch_iter = random_batch_iterator(train_acts, config.batch_size, device, seed=config.seed)
+    batch_iter = split_batch_iterator(all_acts, train_idx, config.batch_size, device, seed=config.seed)
     metrics_path = (
         Path("training_metrics") / f"training_metrics_{config.expansion}x.csv"
         if config.legacy_layout
@@ -174,13 +174,14 @@ def main(argv: list[str] | None = None) -> None:
     training_seconds = time.time() - total_start
     summary = evaluate_sae(
         model=model,
-        val_acts=val_acts,
+        val_acts=all_acts,
         feature_ever_active=feature_ever_active,
         num_features=m,
         device=device,
         eval_batch_size=config.eval_batch_size,
         training_seconds=training_seconds,
         total_seconds=time.time() - total_start,
+        val_indices=val_idx,
         run_metadata={
             "git_commit": get_git_commit(),
             "run_dir": str(run_dir) if run_dir else "legacy",
