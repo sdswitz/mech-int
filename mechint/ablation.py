@@ -7,6 +7,7 @@ import csv
 import torch
 import torch.nn.functional as F
 import transformer_lens
+from tqdm.auto import tqdm
 
 from .config import SAETrainConfig
 from .sae import SparseAutoEncoder
@@ -33,7 +34,7 @@ def load_sae_checkpoint(
 
 
 def single_feature_ablation_hook(sae, feature_idx: int):
-    def hook(resid, hook_point):
+    def hook(resid, hook=None):
         f = sae.encoder(resid)
         contribution = f[..., feature_idx].unsqueeze(-1) * sae.W_dec[feature_idx]
         return resid - contribution
@@ -58,10 +59,12 @@ def rank_features_by_ablation(
     hook_name: str,
     texts: list[str],
     feature_subset: list[int] | None = None,
+    show_progress: bool = True,
 ) -> list[dict]:
     indices = feature_subset or list(range(sae.W_dec.shape[0]))
     rows = []
-    for feature_idx in indices:
+    iterator = tqdm(indices, desc="Ablating features", unit="feature") if show_progress else indices
+    for feature_idx in iterator:
         hook_fn = single_feature_ablation_hook(sae, feature_idx)
         kls = [compute_text_kl(model, text, hook_name, hook_fn) for text in texts]
         rows.append(
