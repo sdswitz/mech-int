@@ -1,0 +1,69 @@
+We had fun.
+We had fun
+We had fun!
+That was incredible!
+That was incredible
+I went to the store, but it was closed!
+I went to the store, but it was closed.
+I went to the store, but it was closed
+I packed my bag, checked the door, and left.
+The room was quiet. The window was open.
+First we ate dinner. Then we walked home.
+I had to leave soon, but I still had work to do. Thankfully, Bill helped me and we left on time.
+The cat sat on the mat
+the cat sat on the mat
+Where did she go?
+Where did she go
+\nHello world.
+\n\nHello world.
+Title\nThe first sentence begins here.
+1. Apples\n2. Bananas\n3. Oranges
+"I will be there," she said.
+## Meeting notes 2/5/26 \n ### topic: Q4 KPIs. \n So far, we have hit 3 out of 4 KPIs.
+.
+,
+?
+!
+12 + 24 = 36.
+12 + 24 = 36
+The answer is:
+The answer is
+She opened the door,
+She opened the door
+The list includes apples;
+The list includes apples
+The meeting starts at 9:30.
+The meeting starts at 9:30
+Dr. Smith arrived late.
+Dr. Smith arrived late
+Mr. Jones went home.
+Mr. Jones went home
+Wait...
+Wait
+No.
+No
+Yes.
+Yes
+ Hello world.
+Hello world.
+   Hello world.
+# Title
+# Title.
+- First item
+- First item.
+1. First item
+1. First item.
+"I will be there."
+"I will be there"
+She said, "I will be there."
+She said, "I will be there"
+The room was quiet.
+The room was quiet
+The window was open.
+The window was open
+This sentence ends with a period. This one does too.
+This sentence ends with a period This one does not
+This is a sentence
+This is a sentence.
+This is a sentence?
+This is a sentence!

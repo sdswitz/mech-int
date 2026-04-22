@@ -1,0 +1,7 @@
+interesting features:
+- 1273, 1315 and 476
+
+1273 appears to have more causual impact and is more of a sentence structure (beginning, ending) recognizer
+- see clean vs ablated generation/KL divergences for "That was incredible!"
+
+1315, 476 more just '.' recognizers
