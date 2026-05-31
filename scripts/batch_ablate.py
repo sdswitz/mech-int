@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> None:
         expansion=None,
         device=device,
     )
-    model = build_transformer_model(config.model_name)
+    model = build_transformer_model(config.model_name, device=device)
     texts = list(iter_texts_from_path(args.eval_texts_path))
     subset = [int(item) for item in args.feature_subset.split(",")] if args.feature_subset else None
     rows = rank_features_by_ablation(sae, model, config.hook_name, texts, subset)

@@ -13,8 +13,8 @@ from .config import SAETrainConfig
 from .sae import SparseAutoEncoder
 
 
-def build_transformer_model(model_name: str):
-    return transformer_lens.HookedTransformer.from_pretrained(model_name)
+def build_transformer_model(model_name: str, device: str | None = None):
+    return transformer_lens.HookedTransformer.from_pretrained(model_name, device=device)
 
 
 def load_sae_checkpoint(
