@@ -24,6 +24,12 @@ class SAETrainConfig:
     batch_size: int = 4096
     warmup_steps: int = 2000
     lambda_warmup_steps: int = 5000
+    target_l0: float | None = None
+    lambda_controller_lr: float = 0.05
+    lambda_controller_interval: int = 100
+    lambda_min: float = 1e-4
+    lambda_max: float = 100.0
+    l0_ema_beta: float = 0.99
     max_grad_norm: float = 1.0
     val_fraction: float = 0.05
     seed: int = 42

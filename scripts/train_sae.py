@@ -22,7 +22,7 @@ from mechint.data import (
     write_run_manifest,
 )
 from mechint.eval import append_metrics_row, evaluate_sae, print_eval_summary, save_eval_summary
-from mechint.sae import SAEloss, SparseAutoEncoder
+from mechint.sae import SparseAutoEncoder
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,6 +42,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--warmup-steps", type=int)
     parser.add_argument("--lambda-warmup-steps", type=int)
+    parser.add_argument("--target-l0", type=float, help="Target average active features per token.")
+    parser.add_argument("--lambda-controller-lr", type=float)
+    parser.add_argument("--lambda-controller-interval", type=int)
+    parser.add_argument("--lambda-min", type=float)
+    parser.add_argument("--lambda-max", type=float)
+    parser.add_argument("--l0-ema-beta", type=float)
     parser.add_argument("--max-grad-norm", type=float)
     parser.add_argument("--val-fraction", type=float)
     parser.add_argument("--seed", type=int)
@@ -70,6 +76,12 @@ def resolve_config(args: argparse.Namespace) -> SAETrainConfig:
         "batch_size",
         "warmup_steps",
         "lambda_warmup_steps",
+        "target_l0",
+        "lambda_controller_lr",
+        "lambda_controller_interval",
+        "lambda_min",
+        "lambda_max",
+        "l0_ema_beta",
         "max_grad_norm",
         "val_fraction",
         "seed",
@@ -85,11 +97,27 @@ def resolve_config(args: argparse.Namespace) -> SAETrainConfig:
     return config
 
 
+def validate_config(config: SAETrainConfig) -> None:
+    if config.target_l0 is not None and config.target_l0 <= 0:
+        raise SystemExit("--target-l0 must be positive")
+    if config.lambda_min <= 0:
+        raise SystemExit("--lambda-min must be positive")
+    if config.lambda_max < config.lambda_min:
+        raise SystemExit("--lambda-max must be greater than or equal to --lambda-min")
+    if config.lambda_controller_lr < 0:
+        raise SystemExit("--lambda-controller-lr must be non-negative")
+    if config.lambda_controller_interval <= 0:
+        raise SystemExit("--lambda-controller-interval must be positive")
+    if not 0 <= config.l0_ema_beta < 1:
+        raise SystemExit("--l0-ema-beta must be in [0, 1)")
+
+
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
     config = resolve_config(args)
     device = detect_device(config.device)
     config = config.with_overrides(device=device)
+    validate_config(config)
     set_global_seed(config.seed)
 
     run_dir = make_run_dir(config.runs_root, config.run_name) if not config.legacy_layout else None
@@ -109,6 +137,9 @@ def main(argv: list[str] | None = None) -> None:
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     feature_ever_active = torch.zeros(m, dtype=torch.bool, device=device)
     batch_iter = split_batch_iterator(all_acts, train_idx, config.batch_size, device, seed=config.seed)
+    raw_lam = min(max(config.l1_lambda, config.lambda_min), config.lambda_max)
+    log_lam = math.log(raw_lam)
+    ema_l0: float | None = None
     metrics_path = (
         Path("training_metrics") / f"training_metrics_{config.expansion}x.csv"
         if config.legacy_layout
@@ -126,13 +157,33 @@ def main(argv: list[str] | None = None) -> None:
         xhat, f = model(x)
         mse = F.mse_loss(xhat, x)
         l1 = f.abs().mean()
-        l0 = (f > 0).float().mean()
-        lam = (
-            config.l1_lambda * min(1.0, step / config.lambda_warmup_steps)
-            if config.lambda_warmup_steps > 0
-            else config.l1_lambda
+        active = (f > 0).float()
+        l0_fraction = active.mean()
+        l0 = active.sum(dim=-1).mean()
+
+        ema_l0 = (
+            l0.detach().item()
+            if ema_l0 is None
+            else config.l0_ema_beta * ema_l0 + (1.0 - config.l0_ema_beta) * l0.detach().item()
         )
-        loss = SAEloss(xhat, x, f, lam=lam)
+        lambda_warmup = (
+            min(1.0, step / config.lambda_warmup_steps)
+            if config.lambda_warmup_steps > 0
+            else 1.0
+        )
+        if (
+            config.target_l0 is not None
+            and lambda_warmup >= 1.0
+            and step % max(config.lambda_controller_interval, 1) == 0
+        ):
+            relative_error = (ema_l0 - config.target_l0) / max(config.target_l0, 1.0)
+            relative_error = max(min(relative_error, 1.0), -1.0)
+            log_lam += config.lambda_controller_lr * relative_error
+            log_lam = min(max(log_lam, math.log(config.lambda_min)), math.log(config.lambda_max))
+            raw_lam = math.exp(log_lam)
+
+        lam = raw_lam * lambda_warmup
+        loss = mse + lam * l1
 
         feature_ever_active |= (f > 0).any(dim=0)
 
@@ -159,14 +210,19 @@ def main(argv: list[str] | None = None) -> None:
                     "mse": mse.item(),
                     "l1": l1.item(),
                     "l0": l0.item(),
+                    "l0_fraction": l0_fraction.item(),
                     "dead_features": int((~feature_ever_active).sum().item()),
                     "lr": optimizer.param_groups[0]["lr"],
                     "lam": lam,
+                    "raw_lam": raw_lam,
+                    "target_l0": config.target_l0,
+                    "ema_l0": ema_l0,
                 },
             )
             print(
                 f"step {step}: loss={loss.item():.4f} mse={mse.item():.4f} "
-                f"l0={l0.item():.4f} dead={(~feature_ever_active).sum().item()} "
+                f"l0={l0.item():.2f} l0_frac={l0_fraction.item():.4f} "
+                f"dead={(~feature_ever_active).sum().item()} "
                 f"lr={optimizer.param_groups[0]['lr']:.2e} lam={lam:.2f}",
                 flush=True,
             )
